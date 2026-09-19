@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editable Class Time Table</title>
+  <style>
+    :root {
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      padding: 32px 16px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--text-main);
+    }
+
+    /* Toolbar Controls */
+    .toolbar {
+      max-width: 1250px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      background: #f8fafc;
+    }
+
+    /* Main Schedule Card */
+    .sheet-card {
+      background: var(--card-bg);
+      padding: 32px;
+      max-width: 1250px;
+      width: 100%;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .header-block {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-block h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #1e1b4b;
+    }
+
+    .header-block h2 {
+      margin: 6px 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .header-block .badge-title {
+      display: inline-block;
+      margin-top: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin: 16px 0 12px 0;
+      color: var(--text-muted);
+    }
+
+    /* Table & Grid Styling */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 6px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.78rem;
+      padding: 10px 4px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    th.time-sub {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .day-th {
+      background: #1e293b;
+      color: #f8fafc;
+      font-weight: 800;
+      border: none;
+      font-size: 0.82rem;
+      width: 60px;
+    }
+
+    .vertical-text {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      background-color: #f8fafc;
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      padding: 10px 4px;
+      border-radius: 8px;
+      border: 1px dashed #cbd5e1;
+      user-select: none;
+    }
+
+    /* Subject Cell Styling */
+    .editable-slot {
+      cursor: pointer;
+      padding: 10px 4px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      user-select: none;
+    }
+
+    .editable-slot:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      z-index: 5;
+    }
+
+    /* Color Coding Per Subject */
+    .theme-math      { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+    .theme-ai        { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+    .theme-ds        { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+    .theme-dsa       { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .theme-java      { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .theme-co        { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+    .theme-dslab     { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+    .theme-javalab   { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
+    .theme-free      { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; border-style: dashed; }
+
+    /* Legend Strip */
+    .legend-card {
+      margin-top: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+
+    .legend-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Modal Styling */
+    #editModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 360px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-box select {
+      width: 100%;
+      padding: 10px;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    #status-toast {
+      padding: 8px 16px;
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: none;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .toolbar, #editModal { display: none !important; }
+      .sheet-card { box-shadow: none; border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div id="status-toast">Schedule saved!</div>
+    <div class="btn-group">
+      <button onclick="saveTimetable()">Save Changes</button>
+      <button class="secondary" onclick="window.print()">Print / PDF</button>
+      <button class="secondary" onclick="resetDefaults()">Reset Table</button>
+    </div>
+  </div>
+
+  <div class="sheet-card">
+    <div class="header-block">
+      <h1 contenteditable="true">PRATHYUSHA ENGINEERING COLLEGE</h1>
+      <h2 contenteditable="true">DEPARTMENT OF ARTIFICIAL INTELLIGENCE AND DATA SCIENCE</h2>
+      <div class="badge-title">Class Time Table</div>
+    </div>
+
+    <div class="meta-row">
+      <span contenteditable="true">YEAR / SEM: II / III - A</span>
+      <span contenteditable="true">SEMESTER: ODD (2026-27)</span>
+    </div>
+
+    <!-- Main Grid -->
+    <table id="scheduleGrid">
+      <thead>
+        <tr>
+          <th rowspan="2" class="day-th">DAY</th>
+          <th>1</th>
+          <th>2</th>
+          <th rowspan="2" style="width: 25px;"></th>
+          <th>3</th>
+          <th>4</th>
+          <th>5</th>
+          <th rowspan="2" style="width: 25px;"></th>
+          <th>6</th>
+          <th>7</th>
+        </tr>
+        <tr>
+          <th class="time-sub">8:00 - 8:55 AM</th>
+          <th class="time-sub">8:55 - 9:50 AM</th>
+          <th class="time-sub">10:00 - 10:55 AM</th>
+          <th class="time-sub">10:55 - 11:50 AM</th>
+          <th class="time-sub">11:50 - 12:40 PM</th>
+          <th class="time-sub">1:20 - 2:10 PM</th>
+          <th class="time-sub">2:10 - 3:00 PM</th>
+        </tr>
+      </thead>
+      <tbody id="timetableBody"></tbody>
+    </table>
+
+    <!-- Color Legend -->
+    <div class="legend-card">
+      <div class="legend-title">Subject & Staff Directory</div>
+      <div class="legend-grid" id="legendContainer"></div>
+    </div>
+  </div>
+
+  <!-- Selection Modal -->
+  <div id="editModal">
+    <div class="modal-box">
+      <h3 style="margin: 0; font-size: 1.1rem;">Change Subject</h3>
+      <p id="modalSlotLabel" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;"></p>
+      <select id="subjectSelect"></select>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="secondary" onclick="closeModal()">Cancel</button>
+        <button onclick="applySubjectChange()">Update Slot</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUBJECT_MAP = {
+      "241MAB301T": { name: "Discrete Mathematics", staff: "Mr. D. Jeno Francis", class: "theme-math", color: "#8b5cf6" },
+      "241ALC301J": { name: "Artificial Intelligence (LBT)", staff: "Ms. D. Beulah Elizabeth / Mr. R. Ravi", class: "theme-ai", color: "#3b82f6" },
+      "241ADC301T": { name: "Foundation of Data Science", staff: "Ms. U. Jothilakshmi", class: "theme-ds", color: "#14b8a6" },
+      "241CSC301J": { name: "Data Structures (LBT)", staff: "Ms. P. Sivaganga", class: "theme-dsa", color: "#f59e0b" },
+      "241GES302T": { name: "OOP using Java", staff: "Ms. V. Asha", class: "theme-java", color: "#ef4444" },
+      "241GES301J": { name: "Digital Principles & Comp Org", staff: "Ms. A. Vidhya", class: "theme-co", color: "#f97316" },
+      "241ADC311L": { name: "Data Science Lab", staff: "Ms. U. Jothilakshmi", class: "theme-dslab", color: "#0284c7" },
+      "241GES311L": { name: "Java Lab", staff: "Ms. V. Asha", class: "theme-javalab", color: "#ec4899" },
+      "FREE":       { name: "Free Period / Library", staff: "-", class: "theme-free", color: "#94a3b8" }
+    };
+
+    const defaultData = {
+      MON: ["241MAB301T", "241GES302T", "241CSC301J", "241CSC301J", "FREE", "241ALC301J", "241ADC301T"],
+      TUE: ["241CSC301J", "241ALC301J", "241ALC301J", "241GES302T", "241ADC311L", "241ADC311L", "241ADC311L"],
+      WED: ["241GES301J", "241ADC301T", "241MAB301T", "241MAB301T", "241GES311L", "241GES311L", "241GES311L"],
+      THU: ["241GES301J", "241ADC301T", "241GES301J", "241GES301J", "241GES302T", "241ALC301J", "241MAB301T"],
+      FRI: ["241ALC301J", "241MAB301T", "241ADC301T", "241GES301J", "241MAB301T", "241CSC301J", "241GES302T"]
+    };
+
+    let currentSchedule = JSON.parse(localStorage.getItem("college_tt_colored")) || defaultData;
+    let activeCell = { day: null, index: null, element: null };
+
+    function renderTable() {
+      const tbody = document.getElementById("timetableBody");
+      tbody.innerHTML = "";
+      const days = ["MON", "TUE", "WED", "THU", "FRI"];
+
+      days.forEach((day, dIdx) => {
+        const tr = document.createElement("tr");
+        const th = document.createElement("th");
+        th.textContent = day;
+        th.className = "day-th";
+        tr.appendChild(th);
+
+        const slots = currentSchedule[day];
+
+        // Period 1 & 2
+        tr.appendChild(createSlotCell(day, 0, slots[0]));
+        tr.appendChild(createSlotCell(day, 1, slots[1]));
+
+        // Morning Break
+        if (dIdx === 0) {
+          const breakCell = document.createElement("td");
+          breakCell.rowSpan = 5;
+          breakCell.className = "vertical-text";
+          breakCell.textContent = "Break 09:50 - 10:00 AM";
+          tr.appendChild(breakCell);
+        }
+
+        // Period 3, 4, 5
+        tr.appendChild(createSlotCell(day, 2, slots[2]));
+        tr.appendChild(createSlotCell(day, 3, slots[3]));
+        tr.appendChild(createSlotCell(day, 4, slots[4]));
+
+        // Lunch Break
+        if (dIdx === 0) {
+          const lunchCell = document.createElement("td");
+          lunchCell.rowSpan = 5;
+          lunchCell.className = "vertical-text";
+          lunchCell.textContent = "Lunch 12:40 - 1:20 PM";
+          tr.appendChild(lunchCell);
+        }
+
+        // Period 6 & 7
+        tr.appendChild(createSlotCell(day, 5, slots[5]));
+        tr.appendChild(createSlotCell(day, 6, slots[6]));
+
+        tbody.appendChild(tr);
+      });
+
+      renderLegend();
+    }
+
+    function createSlotCell(day, index, code) {
+      const td = document.createElement("td");
+      td.className = `editable-slot ${SUBJECT_MAP[code] ? SUBJECT_MAP[code].class : 'theme-free'}`;
+      td.textContent = code;
+      td.title = SUBJECT_MAP[code] ? `${SUBJECT_MAP[code].name} (${SUBJECT_MAP[code].staff})` : "";
+      td.onclick = () => openEditModal(day, index, td);
+      return td;
+    }
+
+    function renderLegend() {
+      const container = document.getElementById("legendContainer");
+      container.innerHTML = "";
+      Object.entries(SUBJECT_MAP).forEach(([code, data]) => {
+        if (code === "FREE") return;
+        const item = document.createElement("div");
+        item.className = "legend-item";
+        item.innerHTML = `
+          <span class="color-dot" style="background: ${data.color}"></span>
+          <div>
+            <strong>${code}</strong>: ${data.name}
+            <div style="color: var(--text-muted); font-size: 0.72rem;">${data.staff}</div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function openEditModal(day, index, element) {
+      activeCell = { day, index, element };
+      const modal = document.getElementById("editModal");
+      const label = document.getElementById("modalSlotLabel");
+      const select = document.getElementById("subjectSelect");
+
+      label.textContent = `Assign subject for ${day} — Period ${index + 1}`;
+      select.innerHTML = "";
+
+      Object.keys(SUBJECT_MAP).forEach(code => {
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = `${code} — ${SUBJECT_MAP[code].name}`;
+        if (code === currentSchedule[day][index]) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      modal.style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("editModal").style.display = "none";
+    }
+
+    function applySubjectChange() {
+      const selectedValue = document.getElementById("subjectSelect").value;
+      currentSchedule[activeCell.day][activeCell.index] = selectedValue;
+      renderTable();
+      closeModal();
+    }
+
+    function saveTimetable() {
+      localStorage.setItem("college_tt_colored", JSON.stringify(currentSchedule));
+      const toast = document.getElementById("status-toast");
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 2500);
+    }
+
+    function resetDefaults() {
+      if (confirm("Reset to default schedule?")) {
+        currentSchedule = JSON.parse(JSON.stringify(defaultData));
+        localStorage.removeItem("college_tt_colored");
+        renderTable();
+      }
+    }
+    renderTable();
+  </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "buses": [
+    {
+      "bus_id": "BT101",
+      "source": "Chennai",
+      "destination": "Madurai",
+      "depart_time": "21:40",
+      "total_seats": 40,
+      "base_fare": 650,
+      "booked_seats": [],
+      "history": [
+        62,
+        70,
+        88,
+        91
+      ]
+    },
+    {
+      "bus_id": "BT102",
+      "source": "Chennai",
+      "destination": "Madurai",
+      "depart_time": "07:30",
+      "total_seats": 40,
+      "base_fare": 620,
+      "booked_seats": [],
+      "history": [
+        40,
+        35,
+        28
+      ]
+    },
+    {
+      "bus_id": "BT103",
+      "source": "Chennai",
+      "destination": "Trichy",
+      "depart_time": "19:15",
+      "total_seats": 36,
+      "base_fare": 480,
+      "booked_seats": [],
+      "history": [
+        55,
+        60
+      ]
+    },
+    {
+      "bus_id": "BT104",
+      "source": "Coimbatore",
+      "destination": "Chennai",
+      "depart_time": "22:00",
+      "total_seats": 45,
+      "base_fare": 720,
+      "booked_seats": [],
+      "history": [
+        80,
+        85,
+        95,
+        90,
+        88
+      ]
+    }
+  ],
+  "bookings": [],
+  "pnr_counter": 1000
+}
